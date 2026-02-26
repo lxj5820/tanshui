@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>碳循环饮食助手</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --card-bg: #1a1a1a;
+      --card-bg-2: #242424;
+      --primary: #00d4aa;
+      --high-carb: #ff6b6b;
+      --mid-carb: #ffd93d;
+      --low-carb: #6bcb77;
+      --text: #ffffff;
+      --text-secondary: #888888;
+      --danger: #ff4757;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .header {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .logo span {
+      color: var(--text);
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .date-selector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 16px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .date-btn {
+      background: var(--card-bg-2);
+      border: none;
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .date-btn:hover {
+      background: var(--primary);
+      color: #000;
+    }
+
+    .date-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .today-tag {
+      font-size: 12px;
+      padding: 4px 8px;
+      background: var(--primary);
+      color: #000;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
+    .today-type {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .today-type::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--type-color, var(--primary));
+    }
+
+    .today-type-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .today-type-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--type-color, var(--primary));
+      text-transform: uppercase;
+    }
+
+    .today-type-value.high { --type-color: var(--high-carb); }
+    .today-type-value.mid { --type-color: var(--mid-carb); }
+    .today-type-value.low { --type-color: var(--low-carb); }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title::before {
+      content: '';
+      width: 4px;
+      height: 16px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .stat-item {
+      background: var(--card-bg-2);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--card-bg-2);
+      border-radius: 4px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-fill.carb { background: var(--high-carb); }
+    .progress-fill.protein { background: var(--primary); }
+    .progress-fill.fat { background: var(--mid-carb); }
+
+    .food-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .food-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: var(--card-bg-2);
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+
+    .food-info {
+      flex: 1;
+    }
+
+    .food-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .food-macros {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .food-macros span {
+      margin-right: 8px;
+    }
+
+    .food-macros .c { color: var(--high-carb); }
+    .food-macros .p { color: var(--primary); }
+    .food-macros .f { color: var(--mid-carb); }
+
+    .food-time {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-right: 12px;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      padding: 8px;
+      font-size: 18px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .delete-btn:hover {
+      opacity: 1;
+    }
+
+    .quick-add {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .quick-btn {
+      background: var(--card-bg-2);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 12px 8px;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-btn:hover {
+      border-color: var(--primary);
+      background: rgba(0, 212, 170, 0.1);
+    }
+
+    .add-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .add-form input {
+      flex: 1;
+      min-width: 80px;
+      background: var(--card-bg-2);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .add-form input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .add-form input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .add-btn {
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .add-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .settings-section {
+      margin-top: 12px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-label {
+      font-size: 14px;
+    }
+
+    .settings-input {
+      background: var(--card-bg-2);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 14px;
+      width: 100px;
+      text-align: right;
+    }
+
+    .settings-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    select.settings-input {
+      width: 120px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--card-bg-2);
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: #000;
+      font-weight: 600;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .total-summary {
+      display: flex;
+      justify-content: space-around;
+      padding: 16px;
+      background: var(--card-bg-2);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .total-item {
+      text-align: center;
+    }
+
+    .total-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .total-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .switch-btn {
+      background: var(--card-bg-2);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 8px 16px;
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .switch-btn:hover {
+      border-color: var(--primary);
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: var(--card-bg-2);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .history-item:hover {
+      background: #2a2a2a;
+    }
+
+    .history-date {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .history-info {
+      display: flex;
+      gap: 16px;
+    }
+
+    .history-info span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .history-info .c { color: var(--high-carb); }
+    .history-info .p { color: var(--primary); }
+    .history-info .f { color: var(--mid-carb); }
+
+    .history-empty {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #333;
+      background: var(--card-bg-2);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      border-color: var(--primary);
+      background: rgba(0, 212, 170, 0.1);
+    }
+
+    .action-btn.primary {
+      background: var(--primary);
+      color: #000;
+      border-color: var(--primary);
+    }
+
+    .action-btn.primary:hover {
+      background: #00b894;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .data-info {
+      background: var(--card-bg-2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .data-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+
+    .data-info-row span:last-child {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">碳循环 <span>饮食助手</span></div>
+      <div class="subtitle">科学饮食 · 轻松减脂</div>
+    </header>
+
+    <div class="date-selector">
+      <button class="date-btn" onclick="changeDate(-1)">‹</button>
+      <div class="date-display">
+        <span id="currentDate">今天</span>
+        <span class="today-tag" id="todayTag">今天</span>
+      </div>
+      <button class="date-btn" onclick="changeDate(1)">›</button>
+    </div>
+
+    <div class="today-type">
+      <div class="today-type-label">当日碳水循环</div>
+      <div class="today-type-value" id="todayType">加载中...</div>
+      <div style="margin-top: 12px;">
+        <button class="switch-btn" onclick="switchTodayType()">切换类型</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="record">记录</button>
+      <button class="tab" data-tab="history">历史</button>
+      <button class="tab" data-tab="data">数据</button>
+      <button class="tab" data-tab="settings">设置</button>
+    </div>
+
+    <div class="tab-content active" id="tab-record">
+      <div class="card">
+        <div class="card-title">当日营养摄入</div>
+        <div class="total-summary">
+          <div class="total-item">
+            <div class="total-value" style="color: var(--high-carb);" id="totalCarb">0g</div>
+            <div class="total-label">碳水</div>
+          </div>
+          <div class="total-item">
+            <div class="total-value" style="color: var(--primary);" id="totalProtein">0g</div>
+            <div class="total-label">蛋白质</div>
+          </div>
+          <div class="total-item">
+            <div class="total-value" style="color: var(--mid-carb);" id="totalFat">0g</div>
+            <div class="total-label">脂肪</div>
+          </div>
+          <div class="total-item">
+            <div class="total-value" id="totalCal">0</div>
+            <div class="total-label">热量</div>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value" id="carbPercent">0%</div>
+            <div class="stat-label">碳水目标</div>
+            <div class="progress-bar">
+              <div class="progress-fill carb" id="carbBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="proteinPercent">0%</div>
+            <div class="stat-label">蛋白质目标</div>
+            <div class="progress-bar">
+              <div class="progress-fill protein" id="proteinBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="fatPercent">0%</div>
+            <div class="stat-label">脂肪目标</div>
+            <div class="progress-bar">
+              <div class="progress-fill fat" id="fatBar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">快速添加</div>
+        <div class="quick-add" id="quickAdd"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">添加食物</div>
+        <div class="add-form">
+          <input type="text" id="foodName" placeholder="食物名称">
+          <input type="number" id="foodCarb" placeholder="碳水(g)">
+          <input type="number" id="foodProtein" placeholder="蛋白(g)">
+          <input type="number" id="foodFat" placeholder="脂肪(g)">
+          <button class="add-btn" onclick="addFood()">添加</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">当日饮食记录</div>
+        <div class="food-list" id="foodList">
+          <div class="empty-state">
+            <div class="empty-state-icon">🍽️</div>
+            <div>还没有记录，点击上方添加食物</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-history">
+      <div class="card">
+        <div class="card-title">历史记录</div>
+        <div id="historyList">
+          <div class="history-empty">暂无历史记录</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-data">
+      <div class="card">
+        <div class="card-title">数据管理</div>
+        
+        <div class="data-info">
+          <div class="data-info-row">
+            <span>数据文件</span>
+            <span id="fileName">未加载</span>
+          </div>
+          <div class="data-info-row">
+            <span>记录天数</span>
+            <span id="totalDays">0天</span>
+          </div>
+          <div class="data-info-row">
+            <span>食物记录</span>
+            <span id="totalRecords">0条</span>
+          </div>
+        </div>
+
+        <div class="action-btns">
+          <button class="action-btn primary" onclick="createNewFile()">新建文件</button>
+          <button class="action-btn" onclick="document.getElementById('fileInput').click()">打开文件</button>
+          <input type="file" id="fileInput" class="file-input" accept=".csv" onchange="loadFromFile(event)">
+        </div>
+        
+        <div class="action-btns">
+          <button class="action-btn" onclick="saveToFile()">保存文件</button>
+          <button class="action-btn" onclick="exportToCSV()">导出CSV</button>
+        </div>
+
+        <div style="margin-top: 16px; padding: 12px; background: var(--card-bg-2); border-radius: 8px; font-size: 12px; color: var(--text-secondary);">
+          <p style="margin-bottom: 8px;">📋 CSV格式说明：</p>
+          <p>日期,时间,食物名称,碳水(g),蛋白质(g),脂肪(g)</p>
+          <p style="margin-top: 8px;">可直接用Excel打开CSV文件编辑，编辑后再导入即可更新数据。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-settings">
+      <div class="card">
+        <div class="card-title">个人信息</div>
+        <div class="settings-section">
+          <div class="settings-row">
+            <span class="settings-label">当前体重 (kg)</span>
+            <input type="number" class="settings-input" id="weight" onchange="updateSettings()">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">目标体重 (kg)</span>
+            <input type="number" class="settings-input" id="targetWeight" onchange="updateSettings()">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">活动系数</span>
+            <select class="settings-input" id="activityLevel" onchange="updateSettings()">
+              <option value="1.2">久坐 (1.2)</option>
+              <option value="1.375">轻度 (1.375)</option>
+              <option value="1.55">中度 (1.55)</option>
+              <option value="1.725">高度 (1.725)</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">每日目标热量</span>
+            <span class="settings-input" style="background: transparent; border: none; text-align: right;" id="tdeeDisplay">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">碳循环设置</div>
+        <div class="settings-section">
+          <div class="settings-row">
+            <span class="settings-label">高碳日碳水 (g)</span>
+            <input type="number" class="settings-input" id="highCarb" value="200" onchange="updateSettings()">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">中碳日碳水 (g)</span>
+            <input type="number" class="settings-input" id="midCarb" value="120" onchange="updateSettings()">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">低碳日碳水 (g)</span>
+            <input type="number" class="settings-input" id="lowCarb" value="60" onchange="updateSettings()">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">蛋白质 (g)</span>
+            <input type="number" class="settings-input" id="targetProtein" value="180" onchange="updateSettings()">
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">脂肪 (g)</span>
+            <input type="number" class="settings-input" id="targetFat" value="70" onchange="updateSettings()">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const QUICK_FOODS = [
+      { name: '米饭', carb: 28, protein: 2.6, fat: 0.3 },
+      { name: '鸡胸', carb: 0, protein: 31, fat: 3.6 },
+      { name: '鸡蛋', carb: 0.6, protein: 13, fat: 11 },
+      { name: '香蕉', carb: 23, protein: 1.1, fat: 0.2 },
+      { name: '红薯', carb: 20, protein: 1.6, fat: 0.1 },
+      { name: '燕麦', carb: 12, protein: 2.4, fat: 1.4 },
+      { name: '牛奶', carb: 5, protein: 3.4, fat: 1.9 },
+      { name: '牛肉', carb: 0, protein: 26, fat: 15 },
+    ];
+
+    const CYCLE_TYPES = ['high', 'mid', 'low', 'mid', 'high', 'low', 'rest'];
+    const TYPE_NAMES = { high: '高碳日', mid: '中碳日', low: '低碳日', rest: '休息日' };
+
+    let currentDate = new Date();
+    let currentFileName = null;
+    let data = {
+      user: { weight: 90, targetWeight: 75, activityLevel: 1.55, tdee: 2785 },
+      targets: { highCarb: 200, midCarb: 120, lowCarb: 60, protein: 180, fat: 70 },
+      records: {}
+    };
+
+    function init() {
+      loadFromLocalStorage();
+      renderQuickAdd();
+      renderFoodList();
+      updateStats();
+      renderHistory();
+      updateDateDisplay();
+      updateDataInfo();
+      
+      // 自动尝试加载同目录下的数据文件
+      fetch('data.json')
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error('No data file');
+        })
+        .then(fileData => {
+          if (fileData.records) {
+            data = fileData;
+            currentFileName = 'data.json';
+            saveData();
+            loadDateData();
+            loadSettings();
+            renderFoodList();
+            updateStats();
+            renderHistory();
+            updateDataInfo();
+            console.log('已自动加载 data.json');
+          }
+        })
+        .catch(err => {
+          console.log('未找到数据文件，使用本地存储');
+        });
+    }
+
+    function getDateKey(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function getCycleType(date) {
+      const dayOfWeek = date.getDay();
+      return CYCLE_TYPES[dayOfWeek];
+    }
+
+    function isToday(date) {
+      const today = new Date();
+      return date.getFullYear() === today.getFullYear() &&
+             date.getMonth() === today.getMonth() &&
+             date.getDate() === today.getDate();
+    }
+
+    function changeDate(delta) {
+      currentDate.setDate(currentDate.getDate() + delta);
+      loadDateData();
+      updateDateDisplay();
+    }
+
+    function updateDateDisplay() {
+      const dateKey = getDateKey(currentDate);
+      const dateStr = `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+      
+      document.getElementById('currentDate').textContent = dateStr;
+      document.getElementById('currentDate').setAttribute('data-date', dateKey);
+      
+      const todayTag = document.getElementById('todayTag');
+      if (isToday(currentDate)) {
+        todayTag.style.display = 'inline';
+      } else {
+        todayTag.style.display = 'none';
+      }
+    }
+
+    function loadDateData() {
+      const dateKey = getDateKey(currentDate);
+      const cycleType = getCycleType(currentDate);
+      
+      if (!data.records[dateKey]) {
+        data.records[dateKey] = { type: cycleType, foods: [] };
+      }
+
+      loadSettings();
+      renderFoodList();
+      updateStats();
+    }
+
+    function saveData() {
+      localStorage.setItem('carbCycleData', JSON.stringify(data));
+      localStorage.setItem('carbCycleUser', JSON.stringify({ user: data.user, targets: data.targets }));
+      renderHistory();
+      updateDataInfo();
+    }
+
+    function loadFromLocalStorage() {
+      const saved = localStorage.getItem('carbCycleData');
+      if (saved) {
+        data = JSON.parse(saved);
+        currentFileName = '本地存储';
+      }
+      
+      const userData = JSON.parse(localStorage.getItem('carbCycleUser') || 'null');
+      if (userData) {
+        data.user = { ...data.user, ...userData.user };
+        data.targets = { ...data.targets, ...userData.targets };
+      }
+
+      loadDateData();
+      loadSettings();
+    }
+
+    function loadSettings() {
+      document.getElementById('weight').value = data.user.weight;
+      document.getElementById('targetWeight').value = data.user.targetWeight;
+      document.getElementById('activityLevel').value = data.user.activityLevel;
+      document.getElementById('highCarb').value = data.targets.highCarb;
+      document.getElementById('midCarb').value = data.targets.midCarb;
+      document.getElementById('lowCarb').value = data.targets.lowCarb;
+      document.getElementById('targetProtein').value = data.targets.protein;
+      document.getElementById('targetFat').value = data.targets.fat;
+
+      calculateTDEE();
+    }
+
+    function calculateTDEE() {
+      const weight = data.user.weight;
+      const activity = parseFloat(data.user.activityLevel);
+      const bmr = weight * 24;
+      const tdee = Math.round(bmr * activity);
+      const target = Math.round(tdee * 0.8);
+      document.getElementById('tdeeDisplay').textContent = `${target} kcal`;
+      data.user.tdee = target;
+    }
+
+    function updateSettings() {
+      data.user.weight = parseFloat(document.getElementById('weight').value) || 70;
+      data.user.targetWeight = parseFloat(document.getElementById('targetWeight').value) || 70;
+      data.user.activityLevel = parseFloat(document.getElementById('activityLevel').value);
+      data.targets.highCarb = parseFloat(document.getElementById('highCarb').value) || 200;
+      data.targets.midCarb = parseFloat(document.getElementById('midCarb').value) || 120;
+      data.targets.lowCarb = parseFloat(document.getElementById('lowCarb').value) || 60;
+      data.targets.protein = parseFloat(document.getElementById('targetProtein').value) || 180;
+      data.targets.fat = parseFloat(document.getElementById('targetFat').value) || 70;
+
+      calculateTDEE();
+      saveData();
+      updateStats();
+    }
+
+    function switchTodayType() {
+      const dateKey = getDateKey(currentDate);
+      const types = ['high', 'mid', 'low', 'rest'];
+      const currentIndex = types.indexOf(data.records[dateKey].type);
+      data.records[dateKey].type = types[(currentIndex + 1) % types.length];
+      saveData();
+      updateStats();
+      document.getElementById('todayType').textContent = TYPE_NAMES[data.records[dateKey].type];
+      document.getElementById('todayType').className = `today-type-value ${data.records[dateKey].type}`;
+    }
+
+    function renderQuickAdd() {
+      const container = document.getElementById('quickAdd');
+      container.innerHTML = QUICK_FOODS.map(food => `
+        <button class="quick-btn" onclick="addQuickFood('${food.name}', ${food.carb}, ${food.protein}, ${food.fat})">
+          ${food.name}
+        </button>
+      `).join('');
+    }
+
+    function addQuickFood(name, carb, protein, fat) {
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const dateKey = getDateKey(currentDate);
+      if (!data.records[dateKey]) {
+        data.records[dateKey] = { type: getCycleType(currentDate), foods: [] };
+      }
+      
+      data.records[dateKey].foods.push({ name, carb, protein, fat, time });
+      saveData();
+      renderFoodList();
+      updateStats();
+    }
+
+    function addFood() {
+      const name = document.getElementById('foodName').value.trim();
+      const carb = parseFloat(document.getElementById('foodCarb').value) || 0;
+      const protein = parseFloat(document.getElementById('foodProtein').value) || 0;
+      const fat = parseFloat(document.getElementById('foodFat').value) || 0;
+
+      if (!name) {
+        alert('请输入食物名称');
+        return;
+      }
+
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const dateKey = getDateKey(currentDate);
+      if (!data.records[dateKey]) {
+        data.records[dateKey] = { type: getCycleType(currentDate), foods: [] };
+      }
+      
+      data.records[dateKey].foods.push({ name, carb, protein, fat, time });
+      saveData();
+
+      document.getElementById('foodName').value = '';
+      document.getElementById('foodCarb').value = '';
+      document.getElementById('foodProtein').value = '';
+      document.getElementById('foodFat').value = '';
+
+      renderFoodList();
+      updateStats();
+    }
+
+    function deleteFood(index) {
+      const dateKey = getDateKey(currentDate);
+      data.records[dateKey].foods.splice(index, 1);
+      saveData();
+      renderFoodList();
+      updateStats();
+    }
+
+    function renderFoodList() {
+      const container = document.getElementById('foodList');
+      const dateKey = getDateKey(currentDate);
+      const foods = data.records[dateKey]?.foods || [];
+      
+      if (foods.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🍽️</div>
+            <div>还没有记录，点击上方添加食物</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = foods.map((record, index) => `
+        <div class="food-item">
+          <div class="food-info">
+            <div class="food-name">${record.name}</div>
+            <div class="food-macros">
+              <span class="c">C:${record.carb}g</span>
+              <span class="p">P:${record.protein}g</span>
+              <span class="f">F:${record.fat}g</span>
+            </div>
+          </div>
+          <div class="food-time">${record.time}</div>
+          <button class="delete-btn" onclick="deleteFood(${index})">×</button>
+        </div>
+      `).join('');
+    }
+
+    function updateStats() {
+      const dateKey = getDateKey(currentDate);
+      const foods = data.records[dateKey]?.foods || [];
+      const cycleType = data.records[dateKey]?.type || getCycleType(currentDate);
+      
+      const totals = foods.reduce((acc, r) => ({
+        carb: acc.carb + r.carb,
+        protein: acc.protein + r.protein,
+        fat: acc.fat + r.fat
+      }), { carb: 0, protein: 0, fat: 0 });
+
+      totals.cal = totals.carb * 4 + totals.protein * 4 + totals.fat * 9;
+
+      let targetCarb;
+      switch (cycleType) {
+        case 'high': targetCarb = data.targets.highCarb; break;
+        case 'mid': targetCarb = data.targets.midCarb; break;
+        default: targetCarb = data.targets.lowCarb;
+      }
+
+      const carbPercent = Math.min(100, Math.round(totals.carb / targetCarb * 100));
+      const proteinPercent = Math.min(100, Math.round(totals.protein / data.targets.protein * 100));
+      const fatPercent = Math.min(100, Math.round(totals.fat / data.targets.fat * 100));
+
+      document.getElementById('totalCarb').textContent = `${totals.carb}g`;
+      document.getElementById('totalProtein').textContent = `${totals.protein}g`;
+      document.getElementById('totalFat').textContent = `${totals.fat}g`;
+      document.getElementById('totalCal').textContent = totals.cal;
+
+      document.getElementById('carbPercent').textContent = `${carbPercent}%`;
+      document.getElementById('proteinPercent').textContent = `${proteinPercent}%`;
+      document.getElementById('fatPercent').textContent = `${fatPercent}%`;
+
+      document.getElementById('carbBar').style.width = `${carbPercent}%`;
+      document.getElementById('proteinBar').style.width = `${proteinPercent}%`;
+      document.getElementById('fatBar').style.width = `${fatPercent}%`;
+
+      document.getElementById('todayType').textContent = TYPE_NAMES[cycleType];
+      document.getElementById('todayType').className = `today-type-value ${cycleType}`;
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('historyList');
+      const dates = Object.keys(data.records).sort((a, b) => new Date(b) - new Date(a)).filter(key => {
+        return data.records[key].foods && data.records[key].foods.length > 0;
+      });
+
+      if (dates.length === 0) {
+        container.innerHTML = '<div class="history-empty">暂无历史记录</div>';
+        return;
+      }
+
+      container.innerHTML = dates.slice(0, 30).map(dateKey => {
+        const dayData = data.records[dateKey];
+        const totals = (dayData.foods || []).reduce((acc, r) => ({
+          carb: acc.carb + r.carb,
+          protein: acc.protein + r.protein,
+          fat: acc.fat + r.fat
+        }), { carb: 0, protein: 0, fat: 0 });
+
+        const date = new Date(dateKey);
+        const dateStr = `${date.getMonth() + 1}月${date.getDate()}日`;
+        const isTodayDate = isToday(date);
+
+        return `
+          <div class="history-item" onclick="goToDate('${dateKey}')">
+            <div class="history-date">${dateStr} ${isTodayDate ? '<span class="today-tag" style="font-size:10px;padding:2px 6px;">今天</span>' : ''}</div>
+            <div class="history-info">
+              <span class="c">C:${totals.carb}g</span>
+              <span class="p">P:${totals.protein}g</span>
+              <span class="f">F:${totals.fat}g</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function goToDate(dateKey) {
+      const [year, month, day] = dateKey.split('-').map(Number);
+      currentDate = new Date(year, month - 1, day);
+      loadDateData();
+      updateDateDisplay();
+      
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector('.tab[data-tab="record"]').classList.add('active');
+      document.getElementById('tab-record').classList.add('active');
+    }
+
+    function updateDataInfo() {
+      const dates = Object.keys(data.records).filter(k => data.records[k]?.foods?.length > 0);
+      const totalRecords = dates.reduce((sum, k) => sum + (data.records[k]?.foods?.length || 0), 0);
+      
+      document.getElementById('fileName').textContent = currentFileName || '本地存储';
+      document.getElementById('totalDays').textContent = `${dates.length}天`;
+      document.getElementById('totalRecords').textContent = `${totalRecords}条`;
+    }
+
+    function createNewFile() {
+      if (confirm('新建文件将清空当前数据，是否继续？')) {
+        data = {
+          user: { weight: 90, targetWeight: 75, activityLevel: 1.55, tdee: 2785 },
+          targets: { highCarb: 200, midCarb: 120, lowCarb: 60, protein: 180, fat: 70 },
+          records: {}
+        };
+        currentFileName = null;
+        localStorage.removeItem('carbCycleData');
+        localStorage.removeItem('carbCycleUser');
+        
+        loadDateData();
+        loadSettings();
+        renderFoodList();
+        updateStats();
+        renderHistory();
+        updateDataInfo();
+        alert('已创建新文件');
+      }
+    }
+
+    function saveToFile() {
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `饮食记录_${getDateKey(new Date())}.json`;
+      a.click();
+      
+      URL.revokeObjectURL(url);
+      currentFileName = '已导出';
+      updateDataInfo();
+      alert('文件已保存');
+    }
+
+    function loadFromFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const fileData = JSON.parse(e.target.result);
+          
+          if (fileData.records) {
+            data = fileData;
+            currentFileName = file.name.replace('.json', '');
+            saveData();
+            loadDateData();
+            loadSettings();
+            renderFoodList();
+            updateStats();
+            renderHistory();
+            updateDataInfo();
+            alert('文件加载成功');
+          } else {
+            alert('文件格式不正确');
+          }
+        } catch (err) {
+          alert('文件解析失败: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function exportToCSV() {
+      let csv = '日期,时间,食物名称,碳水(g),蛋白质(g),脂肪(g)\n';
+      
+      const dates = Object.keys(data.records).sort();
+      dates.forEach(dateKey => {
+        const dayData = data.records[dateKey];
+        if (dayData.foods && dayData.foods.length > 0) {
+          dayData.foods.forEach(food => {
+            csv += `${dateKey},${food.time},"${food.name}",${food.carb},${food.protein},${food.fat}\n`;
+          });
+        }
+      });
+
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `饮食记录_${getDateKey(new Date())}.csv`;
+      a.click();
+      
+      URL.revokeObjectURL(url);
+      alert('CSV导出成功，可用Excel打开编辑');
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+        
+        if (tab.dataset.tab === 'history') {
+          renderHistory();
+        }
+      });
+    });
+
+    document.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        addFood();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

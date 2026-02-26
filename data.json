@@ -1,0 +1,16 @@
+{
+  "user": {
+    "weight": 90,
+    "targetWeight": 75,
+    "activityLevel": 1.55,
+    "tdee": 2200
+  },
+  "targets": {
+    "highCarb": 200,
+    "midCarb": 120,
+    "lowCarb": 60,
+    "protein": 180,
+    "fat": 70
+  },
+  "records": {}
+}
